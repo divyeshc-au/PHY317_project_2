@@ -5,13 +5,6 @@ import matplotlib.colors as mcolors # Import matplotlib.colors
 import imageio
 
 def run_waveguide_simulation_and_gif(mode_config, output_filename, field_component_to_visualize):
-    """Runs the macromax simulation and generates a 3D animated GIF.
-
-    Args:
-        mode_config (dict): Dictionary containing 'mode_type', 'n_mode', 'm_mode', 'sp_cutoff_ratio'.
-        output_filename (str): Name of the GIF file to save.
-        field_component_to_visualize (str): 'Ey', or 'Hx'.
-    """
 
     mode_type = mode_config['mode_type']
     n_mode = mode_config['n_mode']
@@ -34,6 +27,7 @@ def run_waveguide_simulation_and_gif(mode_config, output_filename, field_compone
     permittivity[:, a:-a, b:-b] = 1.0
 
     # Calculate the physical dimensions of the waveguide core
+    # Core is air, and the subtraction of 2* a or b implies the removal of material from a metal block.
     core_x_dimension = (shape[1] - 2 * a) * grid_spacing
     core_y_dimension = (shape[2] - 2 * b) * grid_spacing
 
@@ -74,11 +68,11 @@ def run_waveguide_simulation_and_gif(mode_config, output_filename, field_compone
     # Generate 3D Animated GIF
     print(f"Generating 3D animation for {field_component_to_visualize}...")
     field_data_complex = None
-    if field_component_to_visualize == 'Ey': # New transverse component for E-field
-        field_data_complex = solution.E[1, :, :, :].astype(np.complex64) # Extract Ey
+    if field_component_to_visualize == 'Ey': 
+        field_data_complex = solution.E[1, :, :, :].astype(np.complex64) # Extract Ey, 0 for x; 1 for y and 2 for z
         print("Visualizing Ey component.")
-    elif field_component_to_visualize == 'Hx': # New transverse component for H-field
-        field_data_complex = solution.H[0, :, :, :].astype(np.complex64) # Extract Hx
+    elif field_component_to_visualize == 'Hx': 
+        field_data_complex = solution.H[0, :, :, :].astype(np.complex64) # Extract Hx, 0 for x; 1 for y and 2 for z
         print("Visualizing Hx component.")
     else:
         raise ValueError("Invalid field_component_to_visualize. Must be 'Ey', or 'Hx'.")
@@ -89,7 +83,7 @@ def run_waveguide_simulation_and_gif(mode_config, output_filename, field_compone
     plotter.open_gif(output_filename)
     plotter.camera_position = [(12, 6, 6), (2.5, 1, 0.5), (0, 0, 1)]
 
-    # Define a custom 3-color colormap for negative, zero, and positive values
+    # 3-color colormap for negative, zero, and positive values
     colors = ["blue", "lightgray", "red"]
     nodes = [0.0, 0.5, 1.0]
     custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_bluewhite_red", list(zip(nodes, colors)))
