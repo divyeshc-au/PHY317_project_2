@@ -118,7 +118,7 @@ def run_waveguide_simulation_and_gif(mode_config, output_filename, field_compone
     plotter.close()
     print(f"Done! Animation saved as '{output_filename}'.")
 
-# --- Configuration for Ey (TE) GIF ---
+# Configuration for Ey (TE) GIF 
 te_config_ey = {
     'mode_type': 'TE',
     'n_mode': 1,
@@ -127,7 +127,7 @@ te_config_ey = {
 }
 run_waveguide_simulation_and_gif(te_config_ey, f"waveguide_3d_dynamic_TE{te_config_ey['n_mode']}{te_config_ey['m_mode']}_Ey.gif", 'Ey')
 
-# --- Configuration for Hx (TM) GIF ---
+# Configuration for Hx (TM) GIF 
 tm_config_hx = {
     'mode_type': 'TM',
     'n_mode': 1,
