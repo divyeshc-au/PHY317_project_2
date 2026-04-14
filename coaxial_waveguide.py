@@ -4,6 +4,16 @@ import pyvista as pv
 import matplotlib.colors as mcolors
 
 def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielectric_epsilon, operating_wavelength, output_filename, field_component_to_visualize):
+    """Runs the macromax simulation for a coaxial waveguide and generates a 3D animated GIF.
+
+    Args:
+        inner_radius (float): Radius of the inner conductor.
+        outer_radius (float): Radius of the outer conductor (inner surface).
+        dielectric_epsilon (float): Relative permittivity of the dielectric between conductors.
+        operating_wavelength (float): The wavelength at which the simulation is run.
+        output_filename (str): Name of the GIF file to save.
+        field_component_to_visualize (str): 'Ez', 'Hz', 'Er', 'Ephi', 'Hr', 'Hphi'.
+    """
 
     print(f"Setting up simulation for Coaxial Waveguide (inner_r={inner_radius}, outer_r={outer_radius})...")
 
@@ -30,7 +40,7 @@ def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielect
     X, Y = np.meshgrid(axis_x, axis_y, indexing='ij')
     R_coords = np.sqrt(X**2 + Y**2)
 
-    # Permittivity in the region between inner and outer conductors
+    # Apply dielectric permittivity in the region between inner and outer conductors
     for z_idx in range(shape_z):
         permittivity[z_idx, (R_coords >= inner_radius) & (R_coords < outer_radius)] = dielectric_epsilon
 
@@ -38,12 +48,15 @@ def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielect
     source_density = np.zeros((3,) + shape, dtype=complex)
     source_z_slice = 5
 
+    # Approximate TEM mode excitation: a radial E-field.
+    # We'll use a current source component (e.g., Ey) placed between the conductors
+    # at the source plane, aiming to create a radial E-field.
     intermediate_radius = (inner_radius + outer_radius) / 2
-    # Finds out the cell closest to where we would like to be
     idx_y_source = np.argmin(np.abs(axis_y - intermediate_radius))
     idx_x_center = np.argmin(np.abs(axis_x - 0))
 
-    source_density[1, source_z_slice, idx_x_center, idx_y_source] = 1.0 
+    # This attempts to create an Ey field. It's a simplification.
+    source_density[1, source_z_slice, idx_x_center, idx_y_source] = 1.0 # Ey component current
 
     print(f"Exciting with an approximate Ey current source at (X={axis_x[idx_x_center]:.2f}, Y={axis_y[idx_y_source]:.2f}) for TEM-like mode.")
 
@@ -51,13 +64,13 @@ def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielect
     # Run the Physics Solver
     print("Solving Maxwell Equations... please wait.")
     solution = macromax.solve(
-        (axis_z, axis_x, axis_y),  
+        (axis_z, axis_x, axis_y),  # Pass tuple of coordinate arrays as 'grid'
         epsilon=permittivity,
         current_density=source_density,
         vacuum_wavelength=operating_wavelength # Use the given operating wavelength
     )
 
-    # Generate 3D Animated GIF
+    # --- Generate 3D Animated GIF ---
     print(f"Generating 3D animation for {field_component_to_visualize}...")
     field_data_complex = None
     field_label = "Field Component"
@@ -69,7 +82,7 @@ def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielect
     Hy_complex = solution.H[1, :, :, :].astype(np.complex64)
     Hz_complex = solution.H[2, :, :, :].astype(np.complex64)
 
-    # Pre-calculate cylindrical coordinates for visualization
+    # Pre-calculate cylindrical coordinates for visualization if needed
     angles = np.arctan2(Y, X) # Angle phi
 
     if field_component_to_visualize == 'Ez':
@@ -100,7 +113,7 @@ def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielect
     plotter.open_gif(output_filename)
     plotter.camera_position = [(12, 6, 6), (2.5, 1, 0.5), (0, 0, 1)]
 
-    colors = ["blue", "lightgray", "red"]
+    colors = ["blue", "white", "red"]
     nodes = [0.0, 0.5, 1.0]
     custom_cmap = mcolors.LinearSegmentedColormap.from_list("custom_bluewhite_red", list(zip(nodes, colors)))
 
@@ -130,7 +143,7 @@ def run_coaxial_waveguide_simulation_and_gif(inner_radius, outer_radius, dielect
     plotter.close()
     print(f"Done! Animation saved as '{output_filename}'.")
 
-# Example Configuration for Coaxial TEM GIF 
+# --- Example Configuration for Coaxial TEM GIF ---
 coaxial_tem_config = {
     'inner_radius': 0.2, # Radius of the inner conductor
     'outer_radius': 0.8, # Radius of the outer conductor (inner surface)
